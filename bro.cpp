@@ -114,7 +114,7 @@ class Bro{
         #endif
 
         int serverSocketDescriptor  = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-        char requestBuffer[4096];
+        char requestBuffer[4097];
         int requestLength;
         int x;
         if(serverSocketDescriptor < 0){
@@ -155,7 +155,6 @@ class Bro{
         #ifdef linux
         socklen_t len=sizeof(clientSocketInformation);
         #endif
-
         #ifdef _WIN32
         int len=sizeof(clientSocketInformation);
         #endif
@@ -167,19 +166,48 @@ class Bro{
             if(clientSocketDescriptor<0){
                 //not yet decided, 
             }
-            requestLength=recv(clientSocketDescriptor,requestBuffer,sizeof(requestBuffer),0);
-            if(requestLength>0){
-                for(x=0;x<requestLength;x++)printf("%c",requestBuffer[x]);
-                const  char *response=
-                "HTTP/1.0 200 OK\r\n"
-                "Connection: close\r\n"
-                "Content-type: text/html\r\n"
-                "Content-Length: 141\r\n\r\n"
-                "<html><head><title>Thinking Machines</title></head>"
-                "<body><h1>Thinking Machines</h1></h3>We teach more than we promise to teach</h3></body></html>";
-                send(clientSocketDescriptor,response,strlen(response),0);
-                
+            forward_list<string> requestBufferDS;
+            forward_list<string>::iterator requestBufferDSIterator;
+            requestBufferDSIterator=requestBufferDS.before_begin();
+            int requestBufferDSSize=0;
+            int requestDataCount=0;
+            while(1){
+                requestLength=recv(clientSocketDescriptor,requestBuffer,sizeof(requestBuffer)-sizeof(char),0);
+                if(requestLength==0)break;
+                requestBuffer[requestLength] ='\0';
+                requestBufferDSIterator = requestBufferDS.insert_after(requestBufferDSIterator,string(requestBuffer));
+                requestBufferDSSize++;
+                requestDataCount+=requestLength;
+
             }
+            if(requestBufferDSSize>0){
+                char *requestData = new char(requestDataCount+1);
+                char *p;
+                p=requestData;
+                const char *q;
+                requestBufferDSIterator=requestBufferDS.begin();
+                while(requestBufferDSIterator != requestBufferDS.end()){
+                    q = (*requestBufferDSIterator).c_str();
+                    while(*q){
+                        *p=*q;
+                        p++;
+                        q++;
+                    }
+                    ++requestBufferDSIterator;
+                }
+                *p = '\0';
+                requestBufferDS.clear();
+                printf("-----------------------request data begin -------------------\n");
+                printf("%s\n",requestData);
+                printf("-----------------------request data begin -------------------\n");
+
+                //code to parse the request goes here
+                delete [] requestData;
+            }else{
+                //someting if no data was received
+            }
+
+            
             //lot of code will be wriiter to close
         } //loop end here
         #ifdef _WIN32
