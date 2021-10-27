@@ -2,8 +2,8 @@
 #include<map>
 #include<forward_list>
 #include<string.h>
-//#include<arpa/inet.h> //#include<Winsock2.h> for win
-#include<windows.h>
+#include<arpa/inet.h> //#include<Winsock2.h> for win
+#include<sys/socket.h>
 #include<unistd.h>
 
 using namespace std;
@@ -98,15 +98,10 @@ class Bro{
     }
 
     void listen(int portNumber,void (*callBack)(Error &)){
-        WSADATA wsaData;
-        WORD ver;
-        ver=MAKEWORD(1,1);
-        WSAStartup(ver,&wsaData);
         int serverSocketDescriptor  = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
         char requestBuffer[4096];
         int requestLength;
         int x;
-
         if(serverSocketDescriptor < 0){
             Error error("Unable to create Socket.");
             callBack(error);
@@ -119,7 +114,6 @@ class Bro{
         int sucessCode = bind(serverSocketDescriptor,(struct sockaddr *)&serverSocketInformation,sizeof(serverSocketInformation));
         if(sucessCode<0){
             close(serverSocketDescriptor);
-            WSACleanup();
             char a[101];
             sprintf(a,"Unable to bind socket to port : %d",portNumber);
             Error error(a);
@@ -129,7 +123,6 @@ class Bro{
         sucessCode=::listen(serverSocketDescriptor,10);
         if(sucessCode<0){
             close(serverSocketDescriptor);
-            WSACleanup();
             Error error("Unable to accept client connection.");
             callBack(error);
             return;
@@ -138,7 +131,7 @@ class Bro{
         Error error("");
         callBack(error);
         struct sockaddr_in clientSocketInformation;
-        int len=sizeof(clientSocketInformation);
+        socklen_t len=sizeof(clientSocketInformation);
         int clientSocketDescriptor;
         while(1){
             clientSocketDescriptor=accept(serverSocketDescriptor,(struct sockaddr *)&clientSocketInformation,&len);
@@ -208,7 +201,7 @@ int main(){
         response.setContentType("text/html");
         response<<html;
     });
-    bro.listen(7000, [](Error & error) -> void {
+    bro.listen(7070, [](Error & error) void {
         if(error.hasError())
         {
             cout<<"in iff";
