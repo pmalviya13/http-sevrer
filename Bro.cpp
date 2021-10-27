@@ -152,7 +152,14 @@ class Bro{
         Error error("");
         callBack(error);
         struct sockaddr_in clientSocketInformation;
+        #ifdef linux
         socklen_t len=sizeof(clientSocketInformation);
+        #endif
+
+        #ifdef _WIN32
+        int len=sizeof(clientSocketInformation);
+        #endif
+        
         int clientSocketDescriptor;
         while(1){
             clientSocketDescriptor=accept(serverSocketDescriptor,(struct sockaddr *)&clientSocketInformation,&len);
@@ -175,6 +182,9 @@ class Bro{
             }
             //lot of code will be wriiter to close
         } //loop end here
+        #ifdef _WIN32
+        WSACleanup();
+        #endif
     }   
     
 };
