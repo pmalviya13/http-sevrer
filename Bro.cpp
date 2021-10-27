@@ -2,9 +2,17 @@
 #include<map>
 #include<forward_list>
 #include<string.h>
-#include<arpa/inet.h> //#include<Winsock2.h> for win
-#include<sys/socket.h>
 #include<unistd.h>
+#ifdef _WIN32
+#include<windows.h> 
+#endif
+
+#ifdef linux
+#include<arpa/inet.h> 
+#include<sys/socket.h>
+#endif
+
+
 
 using namespace std;
 
@@ -98,6 +106,13 @@ class Bro{
     }
 
     void listen(int portNumber,void (*callBack)(Error &)){
+        #ifdef _WIN32
+        WSADATA wsaData;
+        WORD ver;
+        ver=MAKEWORD(1,1);
+        WSAStartup(ver,&wsaData);
+        #endif
+
         int serverSocketDescriptor  = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
         char requestBuffer[4096];
         int requestLength;
@@ -114,6 +129,9 @@ class Bro{
         int sucessCode = bind(serverSocketDescriptor,(struct sockaddr *)&serverSocketInformation,sizeof(serverSocketInformation));
         if(sucessCode<0){
             close(serverSocketDescriptor);
+            #ifdef _WIN32
+            WSACleanup();
+            #endif
             char a[101];
             sprintf(a,"Unable to bind socket to port : %d",portNumber);
             Error error(a);
@@ -123,6 +141,9 @@ class Bro{
         sucessCode=::listen(serverSocketDescriptor,10);
         if(sucessCode<0){
             close(serverSocketDescriptor);
+            #ifdef _WIN32
+            WSACleanup();
+            #endif
             Error error("Unable to accept client connection.");
             callBack(error);
             return;
