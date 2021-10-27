@@ -2,7 +2,7 @@
 #include<map>
 #include<forward_list>
 #include<string.h>
-#include<Winsock2.h> //#include<arpa/inet.h> for linux
+#include<arpa/inet.h> //#include<Winsock2.h> for win
 #include<sys/socket.h>
 #include<unistd.h>
 
@@ -33,8 +33,12 @@ class Error{
     Error(string error){
         this->error = error;
     }
-    bool hasError() { return this->error.length() > 0; }
-    string getError() { return this->error; }
+    bool hasError() { 
+        return this->error.length() > 0; 
+    }
+    string getError() { 
+        return this->error; 
+    }
 };
 
 class Request{
@@ -116,7 +120,7 @@ class Bro{
             callBack(error);
             return;
         }
-        sucessCode=listen(serverSocketDescriptor,10);
+        sucessCode=::listen(serverSocketDescriptor,10);
         if(sucessCode<0){
             close(serverSocketDescriptor);
             Error error("Unable to accept client connection.");
@@ -128,12 +132,14 @@ class Bro{
         callBack(error);
         struct sockaddr_in clientSocketInformation;
         socklen_t len=sizeof(clientSocketInformation);
+        int clientSocketDescriptor;
         while(1){
-            int clientSocketDescriptor=accept(serverSocketDescriptor,(struct sockaddr *)&clientSocketInformation,&len);
-            if(clientSocketInformation<0){
+            clientSocketDescriptor=accept(serverSocketDescriptor,(struct sockaddr *)&clientSocketInformation,&len);
+            cout<<"clientSocketDescriptor"<<clientSocketDescriptor<<endl;
+            if(clientSocketDescriptor<0){
                 //not yet decided, 
             }
-            requestLength=recv(clientSocketDescriptor,requestBuffer,sizeof(requestBuffer));
+            requestLength=recv(clientSocketDescriptor,requestBuffer,sizeof(requestBuffer),0);
             if(requestLength>0){
                 for(x=0;x<requestLength;x++)printf("%c",requestBuffer[x]);
                 const  char *response=
@@ -141,10 +147,10 @@ class Bro{
                 "Connection: close\r\n"
                 "Content-type: text/html\r\n"
                 "Content-Length: 141\r\n\r\n"
-                "<html lang="en"><head><title>Thinking Machines</title></head>"
-                "<body><h1>Thinking Machines</h1></body></html>";
+                "<html><head><title>Thinking Machines</title></head>"
+                "<body><h1>Thinking Machines</h1></h3>We teach more than we promise to teach</h3></body></html>";
                 send(clientSocketDescriptor,response,strlen(response),0);
-                /
+                
             }
             //lot of code will be wriiter to close
         } //loop end here
@@ -195,11 +201,17 @@ int main(){
         response.setContentType("text/html");
         response<<html;
     });
-    bro.listen(6060, [](Error &error) -> void {
-        if(error.hasError()){
+    bro.listen(7070, [](Error & error) void {
+        if(error.hasError())
+        {
+            cout<<"in iff";
             cout<<error.getError();
         }
-        cout<<"Bro server is ready to accept request at 6060 port.";
+        else{
+            cout<<"in else";
+
+            cout<<"Bro server is ready to accept request at 6060 port.";
+        }
     });
 
     return 0;
